@@ -5,6 +5,8 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
   sendData("AT+RST\r\n", 2000, false);       // reset module
+  // Change SSID and password
+  sendData("AT+CWJAP=\"WeatherStation\",\"nuPl0uaAzi\"\r\n", 2000, false);
   sendData("AT+CWMODE=2\r\n", 1000, false);  // configure as
   //access point
   sendData("AT+CIFSR\r\n", 1000, DEBUG);   // get ip address
