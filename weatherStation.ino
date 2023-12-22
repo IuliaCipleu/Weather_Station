@@ -113,11 +113,11 @@
 #define GREEN 11
 #define RED 12
 #define YELLOW 13
-const int AO_Pin = 0;  // Connect the AO of MQ-4 sensor with analog channel 0 pin (A0) of Arduino
+const int AO_Pin = 7;  // Connect the AO of MQ-4 sensor with analog channel 0 pin (A0) of Arduino
 const int DO_Pin = 8;  // Connect the DO of MQ-4 sensor with digital pin 8 (D8) of Arduino
 int threshold;         // Create a variable to store the digital output of the MQ-4 sensor
 int methaneGas;        // Create a variable to store the analog output of the MQ-4 sensor
-
+const int sensorLight = A0;
 #define DEBUG true
 
 DHT dht(DHTPIN, DHTTYPE);
@@ -175,6 +175,12 @@ void loop() {
         webpage += "<h2>Methane gas:</h2>";
         webpage += readMethaneGas();
       }
+      if (readLight() > 0) {
+        webpage += "<h2>Luminosity:</h2>";
+        webpage += readLight();
+      }
+      webpage += "<h2>Do you want to light on a led?</h2>";
+      webpage += "<a href=\"/l1\"><button>OFF</button></a>";
       cipSend += webpage.length();
       cipSend += "\r\n";
       sendData(cipSend, 100, DEBUG);
@@ -264,7 +270,7 @@ float readMethaneGas() {
   Serial.print(threshold);          // Print the threshold reached - with will either print be LOW or HIGH (above or underneath)
   Serial.print(", ");               // print a comma and space
 
-  Serial.print("Methane Conentration: ");  // Print out the text "Methane Concentration: "
+  Serial.print("Methane Concentration: ");  // Print out the text "Methane Concentration: "
   Serial.println(methaneGas);                  // Print out the methane value - the analog output - beteewn 0 and 1023
 
   if (threshold == HIGH) {
@@ -275,4 +281,18 @@ float readMethaneGas() {
   }
   //delay(1000);  // Set a 10 second delay
   return methaneGas;
+}
+
+float readLight(){
+  int sensorValue = analogRead(sensorLight);
+
+  // Map the sensor value to a range (optional)
+  int mappedValue = map(sensorValue, 0, 1023, 0, 100); // Adjust the output range as needed
+
+  // Print the values to the Serial monitor
+  Serial.print("Sensor Value: ");
+  Serial.print(sensorValue);
+  Serial.print("  Mapped Value: ");
+  Serial.println(mappedValue);
+  return mappedValue;
 }
