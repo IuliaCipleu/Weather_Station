@@ -15,7 +15,9 @@ const int sensorLight = A0;
 
 DHT dht(DHTPIN, DHTTYPE);
 
-float temperatureThreshold = 19.0;  // Initial temperature threshold
+float temperatureThreshold = 19.0;      // Initial temperature threshold
+float temperatureThresholdHigh = 22.0;  // Initial higher temperature threshold
+
 
 void setup() {
   Serial1.begin(115200);
@@ -62,14 +64,35 @@ void loop() {
       } else if (request.indexOf("/l1") != -1) {
         Serial.println("Turning LED OFF");
         digitalWrite(LED_BUILTIN, LOW);
-      } else if (request.indexOf("/setThreshold") != -1) {
+      } else if (request.indexOf("/setThresholdLow") != -1) {
         String thresholdValueStr = getValue(request, "value=");
         if (thresholdValueStr != "") {
           temperatureThreshold = thresholdValueStr.toFloat();
+          if (temperatureThreshold > temperatureThresholdHigh) {
+            // Swap the values
+            float temp = temperatureThreshold;
+            temperatureThreshold = temperatureThresholdHigh;
+            temperatureThresholdHigh = temp;
+          }
           Serial.print("Temperature threshold updated to: ");
           Serial.println(temperatureThreshold);
         }
+      } else if (request.indexOf("/setThresholdHigh") != -1) {
+        String thresholdValueHighStr = getValue(request, "value=");
+        if (thresholdValueHighStr != "") {
+          temperatureThresholdHigh = thresholdValueHighStr.toFloat();
+          if (temperatureThreshold > temperatureThresholdHigh) {
+            // Swap the values
+            float temp = temperatureThreshold;
+            temperatureThreshold = temperatureThresholdHigh;
+            temperatureThresholdHigh = temp;
+          }
+          Serial.print("Higher Temperature threshold updated to: ");
+          Serial.println(temperatureThresholdHigh);
+        }
       }
+
+
 
       String webpage = "<h1>Weather Station App</h1>";
       String cipSend = "AT+CIPSEND=";
@@ -100,12 +123,27 @@ void loop() {
       webpage += "<h2>Do you want to light on a led?</h2>";
       webpage += "<a href=\"/l0\"><button>ON</button></a>";
       webpage += "<a href=\"/l1\"><button>OFF</button></a>";
-      webpage += "<h2>Set Temperature Threshold:</h2>";
-      webpage += "<form action=\"/setThreshold\" method=\"GET\">";
+
+      webpage += "<h2>Current Lower Temperature Threshold:</h2>";
+      webpage += temperatureThreshold;
+      webpage += " C";
+      webpage += "<h2>Current Higher Temperature Threshold:</h2>";
+      webpage += temperatureThresholdHigh;
+      webpage += " C";
+
+      webpage += "<h2>Set Lower Temperature Threshold:</h2>";
+      webpage += "<form action=\"/setThresholdLow\" method=\"GET\">";
       webpage += "<label for=\"threshold\">Threshold Value:</label>";
       webpage += "<input type=\"text\" id=\"threshold\" name=\"value\">";
       webpage += "<input type=\"submit\" value=\"Set\">";
       webpage += "</form>";
+      webpage += "<h2>Set Higher Temperature Threshold:</h2>";
+      webpage += "<form action=\"/setThresholdHigh\" method=\"GET\">";
+      webpage += "<label for=\"thresholdHigh\">Higher Threshold Value:</label>";
+      webpage += "<input type=\"text\" id=\"thresholdHigh\" name=\"value\">";
+      webpage += "<input type=\"submit\" value=\"Set\">";
+      webpage += "</form>";
+
 
       cipSend += webpage.length();
       cipSend += "\r\n";
@@ -153,7 +191,7 @@ float readTemperature() {
       digitalWrite(BLUE, HIGH);
       digitalWrite(GREEN, LOW);
       digitalWrite(RED, LOW);
-    } else if (temperature >= temperatureThreshold && temperature < 28.0) {
+    } else if (temperature >= temperatureThreshold && temperature < temperatureThresholdHigh) {
       digitalWrite(BLUE, LOW);
       digitalWrite(GREEN, HIGH);
       digitalWrite(RED, LOW);
@@ -234,78 +272,78 @@ String getValue(String data, String key) {
   return data.substring(startIndex + startKey.length(), endIndex);
 }
 
-void checkClientCommands() {
-  float temperature, humidity, methaneGas, light = 0.0;
-  temperature = readTemperature();
-  humidity = readHumidity();
-  methaneGas = readMethaneGas();
-  light = readLight();
+// void checkClientCommands() {
+//   float temperature, humidity, methaneGas, light = 0.0;
+//   temperature = readTemperature();
+//   humidity = readHumidity();
+//   methaneGas = readMethaneGas();
+//   light = readLight();
 
-  if (Serial1.available()) {
-    if (Serial1.find("+IPD,")) {
-      delay(500);
-      int connectionId = Serial1.read() - 48;
+//   if (Serial1.available()) {
+//     if (Serial1.find("+IPD,")) {
+//       delay(500);
+//       int connectionId = Serial1.read() - 48;
 
-      String request = Serial1.readStringUntil('\r');
-      if (request.indexOf("/l0") != -1) {
-        Serial.println("Turning LED ON");
-        digitalWrite(LED_BUILTIN, HIGH);
-      } else if (request.indexOf("/l1") != -1) {
-        Serial.println("Turning LED OFF");
-        digitalWrite(LED_BUILTIN, LOW);
-      } else if (request.indexOf("/setThreshold") != -1) {
-        String thresholdValueStr = getValue(request, "value=");
-        if (thresholdValueStr != "") {
-          temperatureThreshold = thresholdValueStr.toFloat();
-          Serial.print("Temperature threshold updated to: ");
-          Serial.println(temperatureThreshold);
-        }
-      }
+//       String request = Serial1.readStringUntil('\r');
+//       if (request.indexOf("/l0") != -1) {
+//         Serial.println("Turning LED ON");
+//         digitalWrite(LED_BUILTIN, HIGH);
+//       } else if (request.indexOf("/l1") != -1) {
+//         Serial.println("Turning LED OFF");
+//         digitalWrite(LED_BUILTIN, LOW);
+//       } else if (request.indexOf("/setThresholdLow") != -1) {
+//         String thresholdValueStr = getValue(request, "value=");
+//         if (thresholdValueStr != "") {
+//           temperatureThreshold = thresholdValueStr.toFloat();
+//           Serial.print("Temperature threshold updated to: ");
+//           Serial.println(temperatureThreshold);
+//         }
+//       }
 
-      String webpage = "<h1>Weather Station App</h1>";
-      String cipSend = "AT+CIPSEND=";
-      cipSend += connectionId;
-      cipSend += ",";
+//       String webpage = "<h1>Weather Station App</h1>";
+//       String cipSend = "AT+CIPSEND=";
+//       cipSend += connectionId;
+//       cipSend += ",";
 
-      if (temperature > 0) {
-        webpage += "<h2>Temperature:</h2>";
-        webpage += temperature;
-        webpage += " C";
-      }
-      if (humidity > 0) {
-        webpage += "<h2>Humidity:</h2>";
-        webpage += humidity;
-        webpage += "%";
-      }
-      if (methaneGas > 0) {
-        webpage += "<h2>Methane gas:</h2>";
-        webpage += methaneGas;
-        webpage += " ppm";
-      }
-      if (light > 0) {
-        webpage += "<h2>Luminosity:</h2>";
-        webpage += light;
-        webpage += " lx";
-      }
+//       if (temperature > 0) {
+//         webpage += "<h2>Temperature:</h2>";
+//         webpage += temperature;
+//         webpage += " C";
+//       }
+//       if (humidity > 0) {
+//         webpage += "<h2>Humidity:</h2>";
+//         webpage += humidity;
+//         webpage += "%";
+//       }
+//       if (methaneGas > 0) {
+//         webpage += "<h2>Methane gas:</h2>";
+//         webpage += methaneGas;
+//         webpage += " ppm";
+//       }
+//       if (light > 0) {
+//         webpage += "<h2>Luminosity:</h2>";
+//         webpage += light;
+//         webpage += " lx";
+//       }
 
-      webpage += "<h2>Do you want to light on a led?</h2>";
-      webpage += "<a href=\"/l0\"><button>ON</button></a>";
-      webpage += "<a href=\"/l1\"><button>OFF</button></a>";
-      webpage += "<h2>Set Temperature Threshold:</h2>";
-      webpage += "<form action=\"/setThreshold\" method=\"GET\">";
-      webpage += "<label for=\"threshold\">Threshold Value:</label>";
-      webpage += "<input type=\"text\" id=\"threshold\" name=\"value\">";
-      webpage += "<input type=\"submit\" value=\"Set\">";
-      webpage += "</form>";
+//       webpage += "<h2>Do you want to light on a led?</h2>";
+//       webpage += "<a href=\"/l0\"><button>ON</button></a>";
+//       webpage += "<a href=\"/l1\"><button>OFF</button></a>";
+//       webpage += "<h2>Set Temperature Threshold:</h2>";
+//       webpage += "<form action=\"/setThresholdLow\" method=\"GET\">";
+//       webpage += "<label for=\"threshold\">Threshold Value:</label>";
+//       webpage += "<input type=\"text\" id=\"threshold\" name=\"value\">";
+//       webpage += "<input type=\"submit\" value=\"Set\">";
+//       webpage += "</form>";
 
-      cipSend += webpage.length();
-      cipSend += "\r\n";
-      sendData(cipSend, 100, DEBUG);
-      sendData(webpage, 150, DEBUG);
-      String closeCommand = "AT+CIPCLOSE=";
-      closeCommand += connectionId;
-      closeCommand += "\r\n";
-      sendData(closeCommand, 300, DEBUG);
-    }
-  }
-}
+//       cipSend += webpage.length();
+//       cipSend += "\r\n";
+//       sendData(cipSend, 100, DEBUG);
+//       sendData(webpage, 150, DEBUG);
+//       String closeCommand = "AT+CIPCLOSE=";
+//       closeCommand += connectionId;
+//       closeCommand += "\r\n";
+//       sendData(closeCommand, 300, DEBUG);
+//     }
+//   }
+// }
