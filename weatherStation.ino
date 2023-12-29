@@ -113,7 +113,7 @@
 #define GREEN 11
 #define RED 12
 //#define YELLOW 13
-#define BUZZER 13
+#define BUZZER 6
 const int AO_Pin = 7;  // Connect the AO of MQ-4 sensor with analog channel 0 pin (A0) of Arduino
 const int DO_Pin = 8;  // Connect the DO of MQ-4 sensor with digital pin 8 (D8) of Arduino
 int threshold;         // Create a variable to store the digital output of the MQ-4 sensor
@@ -124,8 +124,9 @@ const int sensorLight = A0;
 DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
-  Serial.begin(115200);
+  //Serial.begin(115200);
   Serial1.begin(115200);
+  Serial1.setTimeout(500);
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
   sendData("AT+RST\r\n", 2000, false);  // reset module
