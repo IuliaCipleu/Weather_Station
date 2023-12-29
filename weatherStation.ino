@@ -112,7 +112,8 @@
 #define BLUE 10
 #define GREEN 11
 #define RED 12
-#define YELLOW 13
+//#define YELLOW 13
+#define BUZZER 13
 const int AO_Pin = 7;  // Connect the AO of MQ-4 sensor with analog channel 0 pin (A0) of Arduino
 const int DO_Pin = 8;  // Connect the DO of MQ-4 sensor with digital pin 8 (D8) of Arduino
 int threshold;         // Create a variable to store the digital output of the MQ-4 sensor
@@ -144,42 +145,53 @@ void setup() {
   pinMode(GREEN, OUTPUT);
   pinMode(RED, OUTPUT);
   pinMode(DO_Pin, INPUT);   // Set the D8 pin as a digital input pin
-  pinMode(YELLOW, OUTPUT);  //Set the D13 pin as a digital output pin
+  //pinMode(YELLOW, OUTPUT);  //Set the D13 pin as a digital output pin
+  pinMode(BUZZER, OUTPUT);
   digitalWrite(BLUE, LOW);
   digitalWrite(GREEN, LOW);
   digitalWrite(RED, LOW);
+  digitalWrite(BUZZER, LOW);
   Serial.begin(9600);
   dht.begin();
 }
 void loop() {
+  float temperature, humidity, methaneGas, light = 0.0;
+  temperature = readTemperature();
+  humidity = readHumidity();
+  methaneGas = readMethaneGas();
+  light = readLight();
   if (Serial1.available()) {
     if (Serial1.find("+IPD,")) {
       delay(500);
       int connectionId = Serial1.read() - 48;  // read()
                                                //function returns
                                                // ASCII decimal value and 0 (the first decimal number) starts at 48
-      String webpage = "<h1>Weather Station App</h1><a href=\"/l0\"><button>ON</button></a>";
+      String webpage = "<h1>Weather Station App</h1>";
       String cipSend = "AT+CIPSEND=";
       cipSend += connectionId;
       cipSend += ",";
-      webpage += "<a href=\"/l1\"><button>OFF</button></a>";
-      if (readTemperature() > 0) {
+      if (temperature > 0) {
         webpage += "<h2>Temperature:</h2>";
-        webpage += readTemperature();
+        webpage += temperature;
+        webpage += " C";
       }
-      if (readHumidity() > 0) {
+      if (humidity > 0) {
         webpage += "<h2>Humidity:</h2>";
-        webpage += readHumidity();
+        webpage += humidity;
+        webpage += "%";
       }
-      if (readMethaneGas() > 0) {
+      if (methaneGas > 0) {
         webpage += "<h2>Methane gas:</h2>";
-        webpage += readMethaneGas();
+        webpage += methaneGas;
+        webpage += " ppm";
       }
-      if (readLight() > 0) {
+      if (light > 0) {
         webpage += "<h2>Luminosity:</h2>";
-        webpage += readLight();
+        webpage += light;
+        webpage += " lx";
       }
       webpage += "<h2>Do you want to light on a led?</h2>";
+      webpage += "<a href=\"/l0\"><button>ON</button></a>";
       webpage += "<a href=\"/l1\"><button>OFF</button></a>";
       cipSend += webpage.length();
       cipSend += "\r\n";
@@ -203,9 +215,11 @@ String sendData(String command, const int timeout, boolean debug) {
     }
   }
   if (response.indexOf("/l0") != -1) {
+    Serial.println("Turning LED ON");
     digitalWrite(LED_BUILTIN, HIGH);
   }
   if (response.indexOf("/l1") != -1) {
+    Serial.println("Turning LED OFF");
     digitalWrite(LED_BUILTIN, LOW);
   }
   if (debug) {
@@ -275,9 +289,11 @@ float readMethaneGas() {
 
   if (threshold == HIGH) {
     //if (AO_Out >= 200){
-    digitalWrite(YELLOW, HIGH);  // If the threshold is reached, then the LED lights up to indicate a higher concentration
+    //digitalWrite(YELLOW, HIGH);  // If the threshold is reached, then the LED lights up to indicate a higher concentration
+    digitalWrite(BUZZER, HIGH);
   } else {
-    digitalWrite(YELLOW, LOW);  // If the threshold is not reached (stays at 0), the LED stays off
+    //digitalWrite(YELLOW, LOW);  // If the threshold is not reached (stays at 0), the LED stays off
+    digitalWrite(BUZZER, LOW);
   }
   //delay(1000);  // Set a 10 second delay
   return methaneGas;
